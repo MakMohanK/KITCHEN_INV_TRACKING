@@ -12,7 +12,6 @@
         <table class="table table-bordered table-hover shadow mt-3">
             <thead class="table-dark">
                 <tr>
-                    <th>ID</th>
                     <th>Item Name</th>
                     <th>Description</th>
                     <th>Weight (kg)</th>
@@ -21,12 +20,12 @@
                     <th>Exp Date</th>
                     <th>Nutritiants</th>
                     <th>Edit Entry</th>
+                    <th>Delete Entry</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ item.Id }}</td>
                     <td>{{ item.Item_Name }}</td>
                     <td>{{ item.Description }}</td>
                     <td>{{ item.Weight }}</td>
@@ -36,6 +35,9 @@
                     <td>{{ item.Nutritiants }}</td>
                     <td>
                         <a href="/edit/{{ item.Id }}" class="btn btn-warning btn-sm">Edit</a>
+                    </td>
+                    <td>
+                        <a href="/delete/{{ item.Id }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
                     </td>
                 </tr>
                 {% endfor %}

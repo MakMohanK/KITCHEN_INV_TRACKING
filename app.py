@@ -73,5 +73,15 @@ def update_item(item_id):
     
     return redirect('/inventory')
 
+@app.route('/delete/<int:item_id>')
+def delete_item(item_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM inventory WHERE Id = %s", (item_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect('/inventory')
+
 if __name__ == '__main__':
     app.run(debug=True)
