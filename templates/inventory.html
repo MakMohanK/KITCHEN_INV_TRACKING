@@ -20,6 +20,7 @@
                     <th>Mfg Date</th>
                     <th>Exp Date</th>
                     <th>Nutritiants</th>
+                    <th>Edit Entry</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,6 +34,9 @@
                     <td>{{ item.Mfg_Date }}</td>
                     <td>{{ item.Exp_Date }}</td>
                     <td>{{ item.Nutritiants }}</td>
+                    <td>
+                        <a href="/edit/{{ item.Id }}" class="btn btn-warning btn-sm">Edit</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
