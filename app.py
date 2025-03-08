@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect
 import pymysql
+from datetime import datetime, timedelta
 from utils.connect_db import get_db_connection
 
 app = Flask(__name__)
@@ -82,6 +83,50 @@ def delete_item(item_id):
     conn.close()
 
     return redirect('/inventory')
+
+def get_items():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventory")  # Adjust table name if different
+    items = cursor.fetchall()
+    conn.close()
+    return items
+
+@app.route('/expiring-items')
+def expiring_items():
+    today = datetime.today().date()
+    
+    # Categorizing items
+    expired = []
+    less_than_week = []
+    less_than_month = []
+    more_than_month = []
+    
+    for item in get_items():
+        print(item)
+        exp_date = item['Exp_Date']
+        
+        if exp_date < today:
+            expired.append(item)
+        elif today <= exp_date <= today + timedelta(days=7):
+            less_than_week.append(item)
+        elif today + timedelta(days=7) < exp_date <= today + timedelta(days=30):
+            less_than_month.append(item)
+        else:
+            more_than_month.append(item)
+        
+    print(expired)
+    print(less_than_week)
+    print(less_than_month)
+    print(more_than_month)
+    
+    return render_template(
+        'expiring_items.html',
+        expired=expired,
+        less_than_week=less_than_week,
+        less_than_month=less_than_month,
+        more_than_month=more_than_month
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
