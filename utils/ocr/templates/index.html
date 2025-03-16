@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Flask App</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        video {
+            width: 100%;
+            border-radius: 10px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #extracted-text {
+            background: #eef;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 50px;
+        }
+        .field {
+            background: #fff;
+            border: 2px solid #ddd;
+            padding: 10px;
+            min-height: 30px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .draggable {
+            cursor: grab;
+            padding: 5px;
+            background: #ddd;
+            display: inline-block;
+            margin: 5px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Capture Product Image for OCR</h1>
+        <video id="video" autoplay></video>
+        <button id="capture-btn">Capture Image</button>
+        <canvas id="canvas" style="display: none;"></canvas>
+        
+        <h2>Extracted Text (Drag & Drop)</h2>
+        <div id="extracted-text"></div>
+        
+        <h2>Assign Data</h2>
+        <label>Item Name:</label> <div class="field" contenteditable="true" id="item-name"></div>
+        <label>Quantity:</label> <div class="field" contenteditable="true" id="qty"></div>
+        <label>Mfg Date:</label> <div class="field" contenteditable="true" id="mfg-date"></div>
+        <label>Exp Date:</label> <div class="field" contenteditable="true" id="exp-date"></div>
+        <label>Nutrients:</label> <div class="field" contenteditable="true" id="nutrients"></div>
+        <button id="save-btn">Save Data</button>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            let video = document.getElementById('video');
+            let canvas = document.getElementById('canvas');
+            let context = canvas.getContext('2d');
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                })
+                .catch(function(error) {
+                    console.log('Error accessing camera:', error);
+                });
+            
+            $('#capture-btn').click(function() {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imageData = canvas.toDataURL('image/jpeg');
+                
+                $.ajax({
+                    url: '/capture',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ image: imageData }),
+                    success: function(response) {
+                        $('#extracted-text').html(response.text.split('\n').map(t => `<div class='draggable' draggable='true'>${t}</div>`).join(''));
+                        
+                        $('.draggable').on('dragstart', function(event) {
+                            event.originalEvent.dataTransfer.setData('text', $(this).text());
+                        });
+
+                        $('.field').on('dragover', function(event) {
+                            event.preventDefault();
+                        });
+
+                        $('.field').on('drop', function(event) {
+                            event.preventDefault();
+                            $(this).text(event.originalEvent.dataTransfer.getData('text'));
+                        });
+                    },
+                    error: function() {
+                        alert('Error capturing image.');
+                    }
+                });
+            });
+            $('#save-btn').click(function() {
+                let data = {
+                    item_name: $('#item-name').text().trim(),
+                    quantity: $('#qty').text().trim(),
+                    mfg_date: $('#mfg-date').text().trim(),
+                    exp_date: $('#exp-date').text().trim(),
+                    nutrients: $('#nutrients').text().trim()
+                };
+                
+                $.ajax({
+                    url: '/save',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        alert(response.message);
+                    },
+                    error: function() {
+                        alert('Error saving data.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
