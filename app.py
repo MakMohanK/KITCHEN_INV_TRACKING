@@ -1,9 +1,18 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, jsonify
 import pymysql
+import pytesseract
+import cv2
+import numpy as np
+import base64
 from datetime import datetime, timedelta
 from utils.connect_db import get_db_connection
+from werkzeug.utils import secure_filename
+import os
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 @app.route('/')
 def index():
@@ -29,6 +38,17 @@ def add_item():
     conn.close()
     
     return redirect('/inventory')
+
+# Function to process image and extract text
+def extract_text(image_path):
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    text = pytesseract.image_to_string(gray)
+    return text
+
+@app.route('/ocr_page')
+def ocr_page():
+    return render_template('ocr_page.html')
 
 @app.route('/inventory')
 def show_inventory():
@@ -127,6 +147,28 @@ def expiring_items():
         less_than_month=less_than_month,
         more_than_month=more_than_month
     )
+
+@app.route('/capture', methods=['POST'])
+def capture():
+    data = request.json['image']
+    image_data = base64.b64decode(data.split(',')[1])
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'captured_image.jpg')
+    with open(file_path, 'wb') as f:
+        f.write(image_data)
+    extracted_text = extract_text(file_path)
+    return jsonify({'text': extracted_text})
+
+@app.route('/save', methods=['POST'])
+def save_data():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''INSERT INTO inventory (Item_Name, Description, Weight, Price, Mfg_Date, Exp_Date, Nutritiants)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s)''', 
+              (data['item_name'], data['description'], data['weight'], data['price'], data['mfg_date'], data['exp_date'], data['nutrients']))
+    conn.commit()
+    conn.close()
+    return jsonify({'message': 'Data saved successfully'})
 
 if __name__ == '__main__':
     app.run(debug=True)

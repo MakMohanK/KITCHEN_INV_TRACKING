@@ -54,9 +54,9 @@ def save_data():
     data = request.json
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
-    c.execute('''INSERT INTO product_data (item_name, quantity, mfg_date, exp_date, nutrients)
+    c.execute('''INSERT INTO product_data (item_name, description, weight, price, mfg_date, exp_date, nutrients)
                  VALUES (?, ?, ?, ?, ?)''', 
-              (data['item_name'], data['quantity'], data['mfg_date'], data['exp_date'], data['nutrients']))
+              (data['item_name'], data['description'], data['weight'], data['price'], data['mfg_date'], data['exp_date'], data['nutrients']))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Data saved successfully'})
